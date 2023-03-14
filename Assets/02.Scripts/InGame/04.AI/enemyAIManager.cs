@@ -1,9 +1,14 @@
+/*
+작성자: 최재호(cjh0798@gmail.com)
+기능: Enemy의 타겟 검색
+ */
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
+// 타겟 태그
 public enum AITargetTag
 {
     None,
@@ -12,6 +17,7 @@ public enum AITargetTag
     Player,
 }
 
+// 타겟 우선순위 enum
 public enum AITargetOrderCount
 {
     One,
@@ -19,6 +25,7 @@ public enum AITargetOrderCount
     Three
 }
 
+// 인스펙터에서 태그의 타겟 우선순위를 정하기 위한 클래스
 [Serializable]
 public class AITargetOrder
 {
@@ -26,7 +33,7 @@ public class AITargetOrder
     public AITargetOrderCount orderCount;
 }
 
-public class enemyAIManager : MonoBehaviour
+public class EnemyAIManager : MonoBehaviour
 {
 
     public BuildingManager buildingManager;
@@ -37,6 +44,7 @@ public class enemyAIManager : MonoBehaviour
         Init();
     }
 
+    // 초기화
     private void Init()
     {
         List<Building> buildings = buildingManager.buildings;
@@ -57,37 +65,56 @@ public class enemyAIManager : MonoBehaviour
         aiTarget.orderCount = order.orderCount;
     }
 
+    // 타겟 가져오기
     public AITarget GetTarget(Transform ownerTransform)
     {
-        Building targetBuilding = GetTargetBuilding(ownerTransform);
-        if (targetBuilding == null)
-            return null;
+        // 주위에 Player가 있는지 검색
+        AITarget targetPlayer = SearchPlayer(ownerTransform);
 
-        List<Structure> structures = targetBuilding.structures.Where(x => x.IsDead == false).ToList();
-
-        if (structures.Count == 0)
-            return null;
-
-        AITarget resultTarget = structures[0]?.aiTarget;
-
-        for (int i = 0; i < structures.Count; i++)
+        // 주위에 Player가 없을 때
+        if (targetPlayer == null)
         {
-            AITarget curTarget = structures[i].aiTarget;
+            // 가장 가까운 Building 검색
+            Building targetBuilding = GetTargetBuilding(ownerTransform);
+            if (targetBuilding == null)
+                return null;
 
-            Transform curTrans = curTarget.transform;
-            Vector3 curVec = curTrans.position - ownerTransform.position;
-            Vector3 resultVec = resultTarget.transform.position - ownerTransform.position;
+            // Building의 파괴되지 않은 Structure List화
+            List<Structure> structures = targetBuilding.structures.Where(x => x.IsDead == false).ToList();
 
-            if (resultTarget.orderCount <= curTarget.orderCount)
+            if (structures.Count == 0)
+                return null;
+
+
+            // 가장 가까운 Structure 가져오기
+            AITarget resultTarget = structures[0]?.aiTarget;
+
+            for (int i = 0; i < structures.Count; i++)
             {
-                if (resultVec.magnitude > curVec.magnitude)
+                AITarget curTarget = structures[i].aiTarget;
+
+                Transform curTrans = curTarget.transform;
+                Vector3 curVec = curTrans.position - ownerTransform.position;
+                Vector3 resultVec = resultTarget.transform.position - ownerTransform.position;
+
+                // 비교 Structure의 우선순위가 더 높을 때
+                if (resultTarget.orderCount <= curTarget.orderCount)
                 {
-                    resultTarget = curTarget;
+                    // 비교 Structure의 거리가 더 가까울 때
+                    if (resultVec.magnitude > curVec.magnitude)
+                    {
+                        resultTarget = curTarget;
+                    }
                 }
             }
+            return resultTarget;
+        }
+        // 주위에 Player가 있을 때
+        else
+        {
+            return targetPlayer;
         }
 
-        return resultTarget;
     }
 
     // 가장 가까운 Building을 검색

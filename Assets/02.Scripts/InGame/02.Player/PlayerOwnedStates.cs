@@ -1,9 +1,13 @@
+/*
+작성자: 최재호(cjh0798@gmail.com)
+기능: Player의 모든 State
+ */
 using Cysharp.Threading.Tasks;
-using System.Linq;
 using UnityEngine;
 
 namespace PlayerOwnedStates
 {
+    // 가만히 있는 상태
     public class Idle : State<Player>
     {
         private Player ownerEntity;
@@ -34,6 +38,8 @@ namespace PlayerOwnedStates
             ownerEntity.Animator.Play("Idle_C");
         }
     }
+
+    // 달리고 있는 상태 
     public class Run : State<Player>
     {
         private Player ownerEntity;
@@ -87,6 +93,61 @@ namespace PlayerOwnedStates
             ownerEntity.Animator.Play("Run");
         }
     }
+
+    // 데미지를 받은 상태
+    public class Damaged : State<Player>
+    {
+        private Player ownerEntity;
+        private int damage;
+        public override void Enter(Player entity)
+        {
+            Log.PrintLogMiddleLevel("Player Damaged Enter");
+            ownerEntity = entity;
+        }
+
+        public override void Excute()
+        {
+
+        }
+
+        public override void Exit()
+        {
+
+        }
+
+        public override void OnMessage(EntityMessage message)
+        {
+            // 메세지를 통해 Hitbox로부터 데미지 수신
+            if (string.IsNullOrEmpty(message.message) == false && message.type == MessageType.Damaged)
+            {
+                damage = int.Parse(message.message);
+                OnDamaged();
+            }
+        }
+
+        // 데미지 피해 처리
+        private void OnDamaged()
+        {
+            ownerEntity.hp -= damage;
+            Log.PrintLogMiddleLevel("player HP: " + ownerEntity.hp);
+
+            if (ownerEntity.hp <= 0)
+            {
+                ownerEntity.ChangeState(PlayerStates.Die);
+            }
+            else
+            {
+                PlayAnimation();
+            }
+        }
+
+        private void PlayAnimation()
+        {
+            ownerEntity.Animator.Play(PlayerAnimClips.Damaged.ToString());
+        }
+    }
+
+    // 공격중인 상태
     public class Attack : State<Player>
     {
         private Player ownerEntity;
@@ -133,6 +194,8 @@ namespace PlayerOwnedStates
 
 
             ownerEntity.Animator.Play(clipName.ToString());
+
+            // 애니메이션 동작 시간 가져오기
             int delayTime = AnimationUtil.GetAnimationDelay(ownerEntity.Animator, clipName.ToString());
 
             CreateEffect(delayTime);
@@ -149,55 +212,8 @@ namespace PlayerOwnedStates
             effect.Setup(ownerEntity, destroyTime, spawnPos, spawnRot);
         }
     }
-    public class Damaged : State<Player>
-    {
-        private Player ownerEntity;
-        private int damage;
-        public override void Enter(Player entity)
-        {
-            Log.PrintLogMiddleLevel("Player Damaged Enter");
-            ownerEntity = entity;
-        }
 
-        public override void Excute()
-        {
-
-        }
-
-        public override void Exit()
-        {
-
-        }
-
-        public override void OnMessage(EntityMessage message)
-        {
-            if (string.IsNullOrEmpty(message.message) == false && message.type == MessageType.Damaged)
-            {
-                damage = int.Parse(message.message);
-                OnDamaged();
-            }
-        }
-
-        private void OnDamaged()
-        {
-            ownerEntity.hp -= damage;
-            Log.PrintLogMiddleLevel("player HP: " + ownerEntity.hp);
-
-            if (ownerEntity.hp <= 0)
-            {
-                ownerEntity.ChangeState(PlayerStates.Die);
-            }
-            else
-            {
-                PlayAnimation();
-            }
-        }
-
-        private void PlayAnimation()
-        {
-            ownerEntity.Animator.Play(PlayerAnimClips.Damaged.ToString());
-        }
-    }
+    // 죽은 상태
     public class Die : State<Player>
     {
         private Player ownerEntity;
@@ -232,5 +248,3 @@ namespace PlayerOwnedStates
         }
     }
 }
-
-

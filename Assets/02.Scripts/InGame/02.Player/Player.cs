@@ -1,6 +1,6 @@
 /*
 작성자: 최재호(cjh0798@gmail.com)
-기능: FSM에 사용되는 Player
+기능: FSM을 사용하는 Player
  */
 using PlayerOwnedStates;
 using UnityEngine;
@@ -44,6 +44,10 @@ public class Player : BattleEntity
         gameObject.name = $"{GetType().Name}_{ID}";
         gameObject.SetActive(true);
 
+        // Player 인스펙터에 있는 컴포넌트 주입
+        Controller = GetComponent<CharacterController>();
+        Animator = GetComponent<Animator>();
+
         // Player State 인스턴트 생성
         states = new State<Player>[5];
         states[(int)PlayerStates.Idle] = new Idle();
@@ -51,10 +55,6 @@ public class Player : BattleEntity
         states[(int)PlayerStates.Attack] = new Attack();
         states[(int)PlayerStates.Damaged] = new Damaged();
         states[(int)PlayerStates.Die] = new Die();
-
-        // Player에 있는 컴포넌트 주입
-        Controller = GetComponent<CharacterController>();
-        Animator = GetComponent<Animator>();
 
         // StateMachine 인스턴트 생성 및 Setup
         stateMachine = new BattleStateMachine<Player>();
@@ -86,7 +86,7 @@ public class Player : BattleEntity
         stateMachine.OnMessage(message);
     }
 
-    // PlayerInput
+    // PlayerInput에서 Move가 입력될 때 호출되는 함수
     public void OnMovement(CallbackContext value)
     {
         if (IsAttacking)
@@ -98,6 +98,7 @@ public class Player : BattleEntity
         ChangeState(PlayerStates.Run);
     }
 
+    // PlayerInput에서 공격이 입력될 때 호출되는 함수
     public void OnAttack(CallbackContext value)
     {
         if (!value.canceled || IsAttacking)
@@ -107,6 +108,7 @@ public class Player : BattleEntity
         ChangeState(PlayerStates.Attack);
     }
 
+    // 공격 받았을 때 호출되는 함수
     public override void OnDamaged(int damage, int senderID)
     {
         EntityMessage message = EntityMessanger.Instance.CreateMessage(damage.ToString(), MessageType.Damaged, ID, senderID);

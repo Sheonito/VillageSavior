@@ -1,7 +1,9 @@
-using System.Collections;
+/*
+작성자: 최재호(cjh0798@gmail.com)
+기능: Player 생성 및 Player Setup
+ */
 using System.Collections.Generic;
 using UnityEngine;
-using System.Linq;
 
 public class PlayerFactory : MonoBehaviour
 {
@@ -9,25 +11,15 @@ public class PlayerFactory : MonoBehaviour
 
     [SerializeField]
     private PlayerCam playerCam;
-    
-    private List<Player> playerList;
-    public void Setup()
-    {
-        playerList = new List<Player>();
-    }
 
-    private void Update()
-    {
-        for (int i = 0; i < playerList.Count; i++)
-        {
-            playerList[i].Updated();
-        }
-    }
 
+    // Player 생성
     public void CreatePlayer(List<PlayerSpawnData> spawnData)
     {
+        // 직업 종류 Count 만큼 반복
         for (int i = 0; i < spawnData.Count; i++)
         {
+            // 해당 직업의 Count 만큼 반복
             for (int j = 0; j < spawnData[i].spawnCount; j++)
             {
                 Player player = ObjectPool.Instance.GetObject(spawnData[i].poolTag)?.GetComponent<Player>();
@@ -37,20 +29,14 @@ public class PlayerFactory : MonoBehaviour
                 Vector3 spawnPos = new Vector3(spawnVector.x, spawnVector.y, spawnVector.z);
                 player.transform.position = spawnPos;
 
-                if (player != null)
-                    playerList.Add(player);
-
                 if (spawnData[i].isMine)
-                { 
+                {
                     player.IsMine = true;
                     playerCam.Setup(player);
                 }
-
-                playerList[j].Setup();
+                player.Setup();
             }
         }
     }
 
 }
-
-

@@ -1,3 +1,7 @@
+/*
+작성자: 최재호(cjh0798@gmail.com)
+기능: FSM을 활용하여 스테이지 관리
+ */
 using StageManagerOwnedStates;
 using System;
 using System.Collections;
@@ -35,12 +39,14 @@ public class StageManager : Entity
         Updated();
     }
 
+    // 초기화
     public override void Setup()
     {
         base.Setup();
 
         CurLevelData = stageData.levelData[0];
 
+        // StageManager State 인스턴트 생성
         states = new State<StageManager>[5];
         states[(int)StageManagerState.NormalStage] = new NormalStage();
         states[(int)StageManagerState.BossStage] = new BossStage();
@@ -48,9 +54,13 @@ public class StageManager : Entity
         states[(int)StageManagerState.StageClear] = new StageClear();
         states[(int)StageManagerState.CheckStageLevel] = new CheckStageLevel();
 
+        // StateMachine 인스턴트 생성 및 Setup
         stateMachine = new StateMachine<StageManager>();
         stateMachine.Setup(this, states[(int)StageManagerState.NormalStage]);
         stateMachine.SetGlobalState(states[(int)StageManagerState.CheckStageLevel]);
+
+        // Player 생성
+        playerManager.CreatePlayer(CurLevelData.playerData);
     }
 
     public override void OnMessage(EntityMessage entityMessage)
@@ -58,17 +68,20 @@ public class StageManager : Entity
 
     }
 
+    // Update에서 매 프레임 마다 호출
     public override void Updated()
     {
         stateMachine.Excute();
     }
 
+    // State 변경
     public void ChangeState(StageManagerState newState)
     {
         CurState = newState;
         stateMachine.ChangeState(states[(int)newState]);
     }
 
+    // 다음 StageLevel로 변경
     public StageLevel ChangeNextLevel()
     {
         CurLevel = CurLevel + 1;

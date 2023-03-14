@@ -9,7 +9,6 @@ using UnityEngine;
 public class GameManager : MonoSingleton<GameManager>
 {
     public LogLevel logLevel;
-
     private void Awake()
     {
         DontDestroyOnLoad(this);

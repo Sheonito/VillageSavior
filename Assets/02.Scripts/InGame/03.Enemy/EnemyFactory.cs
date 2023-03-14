@@ -1,27 +1,16 @@
-using EnemyOwnedStates;
-using System.Collections;
+/*
+작성자: 최재호(cjh0798@gmail.com)
+기능: Enemy 생성 및 Enemy Setup
+ */
 using System.Collections.Generic;
 using UnityEngine;
 
 public class EnemyFactory : MonoBehaviour
 {
     [SerializeField]
-    private enemyAIManager aiManager;
-    private List<Enemy> enemyList;
+    private EnemyAIManager aiManager;
 
-    public void Setup()
-    {
-        enemyList = new List<Enemy>();
-    }
-
-    private void Update()
-    {
-        for (int i = 0; i < enemyList.Count; i++)
-        {
-            enemyList[i].Updated();
-        }
-    }
-
+    // Enemy 생성
     public void CreateEnemy(List<EnemySpawnData> spawnData)
     {
         for (int i = 0; i < spawnData.Count; i++)
@@ -34,8 +23,6 @@ public class EnemyFactory : MonoBehaviour
                 SpawnVector spawnVector = spawnData[i].spawnPoints[ranSpawnPoint];
                 Vector3 spawnPos = new Vector3(spawnVector.x, spawnVector.y, spawnVector.z);
                 enemy.transform.position = spawnPos;
-
-                enemyList.Add(enemy);
                 enemy.aiManager = aiManager;
                 enemy.Setup();
             }

@@ -1,5 +1,7 @@
-using System.Collections;
-using System.Collections.Generic;
+/*
+작성자: 최재호(cjh0798@gmail.com)
+기능: Player 카메라
+ */
 using UnityEngine;
 
 public class PlayerCam : MonoBehaviour

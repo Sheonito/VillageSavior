@@ -1,11 +1,14 @@
+/*
+작성자: 최재호(cjh0798@gmail.com)
+기능: Enemy의 모든 State
+ */
 using Cysharp.Threading.Tasks;
-using System.Linq;
 using UnityEngine;
-using UnityEngine.AI;
 using DG.Tweening;
 
 namespace EnemyOwnedStates
 {
+    // 가만히 있는 상태
     public class Idle : State<Enemy>
     {
         private Enemy ownerEntity;
@@ -30,14 +33,18 @@ namespace EnemyOwnedStates
 
         }
     }
+
+    // Building으로 달려가고 있는 상태 
     public class RunBuilding : State<Enemy>
     {
         private Enemy ownerEntity;
-        public override async void Enter(Enemy entity)
+        public override void Enter(Enemy entity)
         {
             Log.PrintLogMiddleLevel("Enemy RunBuilding Enter");
 
             ownerEntity = entity;
+
+            // Enemy AITarget 불러오기
             AITarget aiTarget = ownerEntity.aiManager.GetTarget(ownerEntity.transform);
 
             if (aiTarget == null)
@@ -46,12 +53,12 @@ namespace EnemyOwnedStates
                 return;
             }
 
-            ownerEntity.CurAITarget = aiTarget;
+            // Enemy 목적지 설정
+            ownerEntity.curAITarget = aiTarget;
             Transform destTransform = aiTarget.transform;
             float stoppedDistance = aiTarget.stoppingDistance;
             SetDestination(ownerEntity, stoppedDistance, destTransform);
 
-            await UniTask.WaitUntil(() => ownerEntity.Agent.remainingDistance != 0);
             PlayAnimation(ownerEntity);
         }
 
@@ -63,9 +70,12 @@ namespace EnemyOwnedStates
 
             bool isAttackRange = ownerEntity.Agent.remainingDistance <= ownerEntity.Agent.stoppingDistance;
             bool isCoolTime = ownerEntity.curAttackCoolTime >= ownerEntity.attackCoolTime;
-            if (ownerEntity.Agent.remainingDistance == 0 || ownerEntity == null)
+
+            // Agent SetDestination 시 일시적으로 remainingDistance가 0이 되어 공격하는 버그 예외처리
+            if (ownerEntity.Agent.remainingDistance == 0 || ownerEntity == null) 
                 return;
 
+            // 공격범위 안에 있고 공격 쿨타임이 차면 공격
             else if (isAttackRange && isCoolTime)
             {
                 ownerEntity.ChangeState(EnemyStates.Attack);
@@ -86,25 +96,25 @@ namespace EnemyOwnedStates
 
         }
 
+        // Enemy 목적지 설정
         private void SetDestination(Enemy enemy, float stoppingDinstance, Transform destTransform)
         {
             enemy.Agent.isStopped = false;
             enemy.Agent.stoppingDistance = stoppingDinstance;
-            enemy.CurDestTrans = destTransform;
-            enemy.Agent.SetDestination(enemy.CurDestTrans.position);
-            enemy.CurAITargetTag = AITargetTag.Building;
+            enemy.curDestTrans = destTransform;
+            enemy.Agent.SetDestination(enemy.curDestTrans.position);
+            enemy.curAITargetTag = AITargetTag.Building;
 
         }
 
         private void PlayAnimation(Enemy enemy)
         {
-            if (enemy.Agent.remainingDistance > enemy.Agent.stoppingDistance)
-            {
-                enemy.Animator.Play(EnemyAnimClips.Run.ToString());
-            }
+            enemy.Animator.Play(EnemyAnimClips.Run.ToString());
 
         }
     }
+
+    // Player에게 달려가고 있는 상태
     public class RunPlayer : State<Enemy>
     {
         private Enemy ownerEntity;
@@ -120,12 +130,15 @@ namespace EnemyOwnedStates
         {
             bool isAttackRange = ownerEntity.Agent.remainingDistance <= ownerEntity.Agent.stoppingDistance;
             bool isCoolTime = ownerEntity.curAttackCoolTime >= ownerEntity.attackCoolTime;
+
+            // 공격범위 안에 있고 공격 쿨타임이 차면 공격
             if (isAttackRange && isCoolTime)
             {
                 ownerEntity.ChangeState(EnemyStates.Attack);
             }
             else
             {
+                // Enemy 목적지 설정
                 SetDestination(ownerEntity);
             }
         }
@@ -140,16 +153,19 @@ namespace EnemyOwnedStates
 
         }
 
+        // Enemy 목적지 설정
         private void SetDestination(Enemy entity)
         {
-            AITarget aiTarget = entity.CurDestTrans.GetComponent<AITarget>();
-            entity.CurAITarget = aiTarget;
+            AITarget aiTarget = entity.curDestTrans.GetComponent<AITarget>();
+            entity.curAITarget = aiTarget;
             entity.Agent.isStopped = false;
             entity.Agent.stoppingDistance = aiTarget.stoppingDistance;
-            entity.Agent.SetDestination(entity.CurDestTrans.position);
-            entity.CurAITargetTag = AITargetTag.Player;
+            entity.Agent.SetDestination(entity.curDestTrans.position);
+            entity.curAITargetTag = AITargetTag.Player;
         }
     }
+
+    // 데미지를 받은 상태
     public class Damaged : State<Enemy>
     {
         private Enemy ownerEntity;
@@ -173,16 +189,18 @@ namespace EnemyOwnedStates
 
         public override void OnMessage(EntityMessage entityMessage)
         {
+            // 메세지를 통해 Hitbox로부터 데미지 수신
             if (string.IsNullOrEmpty(entityMessage.message) == false && entityMessage.type == MessageType.Damaged)
             {
                 damage = int.Parse(entityMessage.message);
                 Entity targetEntity = EntityDatabase.Instance.GetEntity(entityMessage.sender);
-                ownerEntity.CurDestTrans = targetEntity.transform;
+                ownerEntity.curDestTrans = targetEntity.transform;
 
                 OnDamaged().Forget();
             }
         }
 
+        // 데미지 피해 처리
         private async UniTaskVoid OnDamaged()
         {
             if (damage == 0)
@@ -212,6 +230,8 @@ namespace EnemyOwnedStates
             await UniTask.Delay(delayTime);
         }
     }
+
+    // 공격중인 상태
     public class Attack : State<Enemy>
     {
         private Enemy ownerEntity;
@@ -221,28 +241,29 @@ namespace EnemyOwnedStates
             ownerEntity = entity;
         }
 
-        public override async void Excute()
+        public override void Excute()
         {
-            if (ownerEntity.curAttackCoolTime >= ownerEntity.attackCoolTime)
+            bool isCoolTime = ownerEntity.curAttackCoolTime >= ownerEntity.attackCoolTime;
+
+            // 쿨타임이 찼을 때
+            if (isCoolTime)
             {
-                if (ownerEntity.CurAITargetTag == AITargetTag.Player)
+                // 공격 타겟이 Player일 때
+                if (ownerEntity.curAITargetTag == AITargetTag.Player)
                 {
                     AttackPlayer();
                 }
-                else if (ownerEntity.CurAITargetTag == AITargetTag.Building)
+                // 공격 타겟이 Building일 때
+                else if (ownerEntity.curAITargetTag == AITargetTag.Building)
                 {
                     AttackBuilding();
                 }
-
-                // 공격 전
-                Vector3 lookAtPos = ownerEntity.CurAITarget.transform.position;
+                Vector3 lookAtPos = ownerEntity.curAITarget.transform.position;
                 ownerEntity.transform.DOLookAt(lookAtPos, 0.5f);
+                
+                // 공격 후 쿨타임 및 타겟 초기화
                 ownerEntity.curAttackCoolTime = 0;
-                ownerEntity.IsAttacking = true;
-                //await PlayAnimation(EnemyAnimClips.Atk);
-                // 공격 후
-                ownerEntity.CurAITargetTag = AITargetTag.None;
-                ownerEntity.IsAttacking = false;
+                ownerEntity.curAITargetTag = AITargetTag.None;
             }
         }
 
@@ -266,16 +287,18 @@ namespace EnemyOwnedStates
 
         private void AttackPlayer()
         {
-            Player player = ownerEntity.CurAITarget.GetComponent<Player>();
+            Player player = ownerEntity.curAITarget.GetComponent<Player>();
             player.OnDamaged(ownerEntity.attackPower, ownerEntity.ID);
         }
 
         private void AttackBuilding()
         {
-            Structure structure = ownerEntity.CurAITarget.GetComponent<Structure>();
+            Structure structure = ownerEntity.curAITarget.GetComponent<Structure>();
             structure.OnDamaged(ownerEntity.attackPower, ownerEntity.ID);
         }
     }
+
+    // 죽은 상태
     public class Die : State<Enemy>
     {
         private Enemy ownerEntity;
@@ -285,6 +308,8 @@ namespace EnemyOwnedStates
 
             ownerEntity = entity;
             ownerEntity.IsDead = true;
+
+            // 애니메이션 모션이 끝나면 SetActive(false)를 통해 ObjectPool로 돌려보내기
             await PlayAnimation();
             ownerEntity.gameObject.SetActive(false);
         }
@@ -313,6 +338,8 @@ namespace EnemyOwnedStates
             await UniTask.Delay(delayTime);
         }
     }
+
+    // 공격 타겟 검색 상태
     public class SearchTarget : State<Enemy>
     {
         private Enemy ownerEntity;
@@ -324,19 +351,24 @@ namespace EnemyOwnedStates
 
         public override void Excute()
         {
-            if (ownerEntity.IsAttacking)
+            // Enemy가 공격 모션중일 때는 return
+            if (ownerEntity.isAttacking)
                 return;
 
+            // 일정 범위 내 Player가 있는 지 검색
             AITarget player = ownerEntity.aiManager.SearchPlayer(ownerEntity.transform);
-            if (player != null && ownerEntity.CurAITargetTag != AITargetTag.Player)
+
+            // Player가 검색되면 Player를 향해 Run
+            if (player != null && ownerEntity.curAITargetTag != AITargetTag.Player)
             {
                 Transform destTransform = player.transform;
-                ownerEntity.CurAITarget = player;
-                ownerEntity.CurDestTrans = destTransform;
+                ownerEntity.curAITarget = player;
+                ownerEntity.curDestTrans = destTransform;
                 ownerEntity.Agent.isStopped = false;
                 ownerEntity.ChangeState(EnemyStates.RunPlayer);
             }
-            else if (player == null && ownerEntity.CurAITargetTag != AITargetTag.Building)
+            // Player가 검색되지 않으면 Building을 향해 Run
+            else if (player == null && ownerEntity.curAITargetTag != AITargetTag.Building)
             {
                 ownerEntity.Agent.isStopped = false;
                 ownerEntity.ChangeState(EnemyStates.RunBuilding);

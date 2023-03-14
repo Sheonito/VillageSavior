@@ -1,9 +1,18 @@
+/*
+작성자: 최재호(cjh0798@gmail.com)
+기능: Building의 모든 State
+ */
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
 namespace BuildingOwnedStates
 {
+    // 추후 Building이 Player에게 기능을 제공
+    // 컨디션 상태에 따라 Building이 Player에게 제공하는 기능 제한
+
+
+    // 하이 컨디션 상태
     public class HighCondition : State<Building>
     {
         private Building ownerEntity;
@@ -27,6 +36,7 @@ namespace BuildingOwnedStates
             
         }
     }
+    // 미들 컨디션 상태
     public class MiddleCondition : State<Building>
     {
         private Building ownerEntity;
@@ -52,6 +62,7 @@ namespace BuildingOwnedStates
         }
 
     }
+    // 로우 컨디션 상태
     public class LowCondition : State<Building>
     {
         private Building ownerEntity;
@@ -75,7 +86,8 @@ namespace BuildingOwnedStates
             
         }
     }
-    public class OnDestroyStructure : State<Building>
+    // Structure가 파괴되었을 때 상태
+    public class DestroyStructure : State<Building>
     {
         private Building ownerEntity;
         public override void Enter(Building entity)
@@ -94,6 +106,7 @@ namespace BuildingOwnedStates
 
         }
 
+        // Bulding이 가진 StructureCount 마이너스
         public override void OnMessage(EntityMessage entityMessage)
         {
             if (string.IsNullOrEmpty(entityMessage.message) != false && entityMessage.type == MessageType.DestroyedStructure)
@@ -106,19 +119,20 @@ namespace BuildingOwnedStates
             }
         }
 
+        // Building이 가진 StructureCount에 따라 Condition 업데이트
         private void UpdateBuildingCondition()
         {
             if (ownerEntity.AliveStructureCount == 0)
                 ownerEntity.ChangeState(BuildingStates.Die);
 
-            else if (ownerEntity.AliveStructureCount > ownerEntity.ConditionInfo[BuildingStates.HighCondition])
+            else if (ownerEntity.AliveStructureCount > ownerEntity.ConditionStructureCount[BuildingStates.HighCondition])
             {
                 if (ownerEntity.CurState == BuildingStates.HighCondition)
                     return;
 
                 ownerEntity.ChangeState(BuildingStates.HighCondition);
             }
-            else if (ownerEntity.AliveStructureCount > ownerEntity.ConditionInfo[BuildingStates.MiddleCondition])
+            else if (ownerEntity.AliveStructureCount > ownerEntity.ConditionStructureCount[BuildingStates.MiddleCondition])
             {
                 if (ownerEntity.CurState == BuildingStates.MiddleCondition)
                     return;
@@ -134,6 +148,7 @@ namespace BuildingOwnedStates
             }
         }
     }
+    // Building이 파괴되었을 때 상태
     public class Die : State<Building>
     {
         private Building ownerEntity;

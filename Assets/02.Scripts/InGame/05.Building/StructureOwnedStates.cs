@@ -1,7 +1,12 @@
+/*
+작성자: 최재호(cjh0798@gmail.com)
+기능: Structure의 모든 State
+ */
 using UnityEngine;
 
 namespace StructureOwnedStates
 {
+    // 가만히 있는 상태
     public class Idle : State<Structure>
     {
         private Structure ownerEntity;
@@ -25,6 +30,8 @@ namespace StructureOwnedStates
             
         }
     }
+
+    // 데미지를 받은 상태
     public class Damaged : State<Structure>
     {
         private int damage;
@@ -49,6 +56,7 @@ namespace StructureOwnedStates
 
         public override void OnMessage(EntityMessage entityMessage)
         {
+            // 메세지를 통해 Hitbox로부터 데미지 수신
             if (string.IsNullOrEmpty(entityMessage.message) == false && entityMessage.type == MessageType.Damaged)
             {
                 damage = int.Parse(entityMessage.message);
@@ -56,6 +64,7 @@ namespace StructureOwnedStates
             }
         }
 
+        // 데미지 피해 처리
         private void OnDamaged()
         {
             if (damage == 0)
@@ -65,7 +74,6 @@ namespace StructureOwnedStates
             }
 
             ownerEntity.hp -= damage;
-            //IngameUtil.ShowDmageText(damage,entity.damageText);
             Log.PrintLogMiddleLevel($"{ownerEntity.name} HP: " + ownerEntity.hp);
 
             if (ownerEntity.hp <= 0)
@@ -74,6 +82,8 @@ namespace StructureOwnedStates
             }
         }
     }
+
+    // 파괴된 상태
     public class Die : State<Structure>
     {
         private Structure ownerEntity;
@@ -85,6 +95,7 @@ namespace StructureOwnedStates
             ownerEntity.IsDead = true;
             ownerEntity.aiTarget.IsDead = true;
 
+            // Structure의 부모 Building에서 OnDestroyStructure 호출
             int receiverID = ownerEntity.ParentBuilding.ID;
             int senderID = ownerEntity.ID;
             ownerEntity.ParentBuilding.OnDestroyStructure(ownerEntity, receiverID, senderID);

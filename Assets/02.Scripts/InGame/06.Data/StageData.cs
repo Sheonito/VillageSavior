@@ -1,6 +1,11 @@
+/*
+작성자: 최재호(cjh0798@gmail.com)
+기능: 스테이지에 필요한 데이터
+ */
 using System;
 using System.Collections.Generic;
 
+// 스테이지 레벨
 public enum StageLevel
 {
     Stage1,
@@ -9,6 +14,7 @@ public enum StageLevel
     LastStage
 }
 
+// 스테이지 클리어 목표
 public enum StageClearGoal
 {
     Time,

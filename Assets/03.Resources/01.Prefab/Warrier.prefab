@@ -429,7 +429,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   hp: 100
   attackPower: 3
-  moveSpeed: 4
+  moveSpeed: 6
 --- !u!114 &-4987598119270935934
 MonoBehaviour:
   m_ObjectHideFlags: 0

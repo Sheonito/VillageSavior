@@ -1,3 +1,7 @@
+/*
+작성자: 최재호(cjh0798@gmail.com)
+기능: StageManager의 모든 State
+ */
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -5,6 +9,7 @@ using System.Linq;
 
 namespace StageManagerOwnedStates
 {
+    // 일반 몬스터만 나오는 스테이지
     public class NormalStage : State<StageManager>
     {
         private StageManager ownerEntity;
@@ -14,18 +19,16 @@ namespace StageManagerOwnedStates
         {
             Log.PrintLogMiddleLevel("StageManager NormalStage Enter");
             ownerEntity = entity;
-            ownerEntity.playerManager.Setup();
-            ownerEntity.enemyFactory.Setup();
 
+            // Enemy 생성
             levelData = ownerEntity.stageData.levelData[(int)ownerEntity.CurLevel];
-            List<PlayerSpawnData> playerSpawnData = levelData.playerData;
             List<EnemySpawnData> enemySpawnData = levelData.enemyData;
-            ownerEntity.playerManager.CreatePlayer(playerSpawnData);
             ownerEntity.enemyFactory.CreateEnemy(enemySpawnData);
         }
 
         public override void Excute()
         {
+            // spawnTime마다 Enemy 생성
             spawnTime += Time.deltaTime;
             if (spawnTime >= levelData.spawnCoolTime)
             {
@@ -40,6 +43,7 @@ namespace StageManagerOwnedStates
 
         }
 
+        // EntityMessage를 통해 levelData 불러오기
         public override void OnMessage(EntityMessage entityMessage)
         {
             if (entityMessage.type == MessageType.StageLevelChange)
@@ -68,6 +72,7 @@ namespace StageManagerOwnedStates
 
     }
 
+    // 일반 몬스터와 보스 몬스터가 나오는 스테이지
     public class BossStage : State<StageManager>
     {
         public override void Enter(StageManager entity)
@@ -91,6 +96,7 @@ namespace StageManagerOwnedStates
         }
     }
 
+    // 마지막 스테이지
     public class LastStage : State<StageManager>
     {
         public override void Enter(StageManager entity)
@@ -114,6 +120,7 @@ namespace StageManagerOwnedStates
         }
     }
 
+    // 스테이지를 클리어 했을 때
     public class StageClear : State<StageManager>
     {
         public override void Enter(StageManager entity)
@@ -137,6 +144,7 @@ namespace StageManagerOwnedStates
         }
     }
 
+    // StageLevel을 검사하고 변경하는 상태
     public class CheckStageLevel : State<StageManager>
     {
         private StageManager ownerEntity;
@@ -153,9 +161,10 @@ namespace StageManagerOwnedStates
             StageLevelData levelData = ownerEntity.CurLevelData;
             StageClearGoal clearGoal = levelData.clearGoal;
 
-
+            // 스테이지 클리어 조건
             switch (clearGoal)
             {
+                // 시간
                 case StageClearGoal.Time:
                     if (playTime >= levelData.clearTime)
                     {
@@ -169,10 +178,11 @@ namespace StageManagerOwnedStates
                         }
                     }
                     break;
-
+                // 모든 적 처치
                 case StageClearGoal.AllEnemy:
                     break;
 
+                // 보스 처치
                 case StageClearGoal.Boss:
                     break;
             }
@@ -188,6 +198,7 @@ namespace StageManagerOwnedStates
 
         }
 
+        // 마지막 스테이지인지 확인
         private bool IsLastStage()
         {
             if (ownerEntity.CurLevel == StageLevel.LastStage)

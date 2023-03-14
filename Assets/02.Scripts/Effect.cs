@@ -1,14 +1,19 @@
+/*
+작성자: 최재호(cjh0798@gmail.com)
+기능: 이펙트 OnOff
+ */
 using Cysharp.Threading.Tasks;
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 public class Effect : MonoBehaviour
 {
-    [SerializeField] Hitbox hitbox;
+    [SerializeField] Hitbox hitbox; // 히트박스 콜라이더
 
     /// <summary>
+    /// 이펙트 SetActive(true)
+    /// <para>
     /// ex) 1초 = _destroyTime = 1000
+    /// </para>
     /// </summary>
     public void Setup(BattleEntity _ownerEntity,int _destroyTime,Vector3 pos,Quaternion rot)
     {
@@ -21,6 +26,7 @@ public class Effect : MonoBehaviour
         DestroyEffect(_destroyTime);
     }
 
+    // 이펙트 SetActive(Off)
     private async void DestroyEffect(int delayTime)
     {
         await UniTask.Delay(delayTime);
